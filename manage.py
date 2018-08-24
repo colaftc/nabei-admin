@@ -1,40 +1,26 @@
 import os
 from app import create_app
-from flask import request, jsonify, Response
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 from extentions import exts
+from app.admin_view import ExpenditureTypeModelView
+from app.models import ExpenditureType
 
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'debug')
 db = exts['db']
+mdb = exts['mdb']
 manager = Manager(app)
 migrate = Migrate(app, db)
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    if request.accept_mimetypes.accept_json and \
-       not request.accept_mimetypes.accept_html:
-
-        app.logger.warn('an json client accept and 404')
-        response = jsonify({'error': 'object not found'})
-        response.status_code = 404
-        return response
-
-    else:
-        app.logger.warn('an html client accept and 404')
-        return "<html><body><h1>Sorry , Object Not Found</h1></body></html>", 404
-
-
-# @app.before_request()
-# def app_before_request():
-    # pass
 
 
 def make_shell_context():
     return dict(app=app, db=db)
 
+
+admin = exts['admin']
+admin.name = '网店管理'
+admin.add_view(ExpenditureTypeModelView(ExpenditureType, db.session, name='开支类别'))
 
 manager.add_command('shell', Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)

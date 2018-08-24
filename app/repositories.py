@@ -1,15 +1,16 @@
-from app.models import Expenditure, ExpenditureType
+from app.models import ExpenditureType, ExpenditureDocument
 from extentions import exts
 
 
 db = exts['db']
+mdb = exts['mdb']
 
 
 class RepositoryInterface(object):
-    def add(self):
+    def add(self, item):
         raise NotImplemented
 
-    def all(self, item):
+    def all(self):
         raise  NotImplemented
 
     def get_or(self, id, default=None):
@@ -20,6 +21,25 @@ class RepositoryInterface(object):
 
     def remove(self, item):
         raise NotImplemented
+
+
+class ExpenditureRepo(RepositoryInterface):
+    def add(self, name, amount, category=None):
+        item = ExpenditureDocument(name=name, amount=amount, category=category)
+        item.save()
+        return item
+
+    def all(self):
+        return ExpenditureDocument.objects.all()
+
+    def get_or(self, identity, default=None):
+        return ExpenditureDocument.objects(name=identity).first() or default
+
+    def get_by(self, name):
+        return self.get_or(name)
+
+    def remove(self, condition={}):
+        ExpenditureDocument.objects(**condition).delete()
 
 
 class RepoMixin(RepositoryInterface):

@@ -1,9 +1,11 @@
 from app import create_app
 from extentions import exts
 from app import models
-from app.repositories import ExpenditureRepository
+import decimal
+from app.repositories import ExpenditureRepository, ExpenditureRepo, ExpenditureDocument
 
 db = exts['db']
+mdb = exts['mdb']
 
 
 class TestApp:
@@ -47,3 +49,38 @@ class TestApp:
         assert e is not None
         repo.remove(e)
 
+
+class TestMongoRepo:
+    PRESSURE_TIMES = 100000
+
+    def setup_class(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        self.client = self.app.test_client()
+        self.repo = ExpenditureRepo()
+
+    def test_repo_method(self):
+        name = 'testing'
+        amount = decimal.Decimal('1969.17')
+        item = self.repo.add(name=name, amount=amount, category='B')
+        assert item.id is not None
+        assert item.name == name
+        assert item.amount == amount
+
+        v1 = self.repo.get_by(name='testing')
+        v2 = self.repo.get_or('testing')
+        assert v1 == v2
+        assert v1.category_label() == '包装耗材'
+        assert self.repo.get_or('notbefound') is None
+
+        self.repo.remove({'name': 'testing'})
+        assert self.repo.get_by(name='testing') is None
+
+    def test_pressure(self):
+        for i in range(self.PRESSURE_TIMES):
+            self.repo.add(name='pressure_testing{}'.format(i), amount=i*1.1, category='G')
+
+        v = self.repo.get_or('pressure_testing1785')
+        assert v is not None
+        ExpenditureDocument.objects.delete()
