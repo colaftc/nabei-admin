@@ -11,9 +11,9 @@ class RepositoryInterface(object):
         raise NotImplemented
 
     def all(self):
-        raise  NotImplemented
+        raise NotImplemented
 
-    def get_or(self, id, default=None):
+    def get_or(self, identity, default=None):
         raise NotImplemented
 
     def get_by(self, name):
@@ -23,14 +23,14 @@ class RepositoryInterface(object):
         raise NotImplemented
 
 
-class ExpenditureRepo(RepositoryInterface):
-    def add(self, name, amount, category=None):
-        item = ExpenditureDocument(name=name, amount=amount, category=category)
+class ExpenditureRepo:
+    def add(self, name, amount, pay_date, category=None):
+        item = ExpenditureDocument(name=name, amount=amount, pay_date=pay_date, category=category)
         item.save()
         return item
 
     def all(self):
-        return ExpenditureDocument.objects.all()
+        return list(ExpenditureDocument.objects.all())
 
     def get_or(self, identity, default=None):
         return ExpenditureDocument.objects(name=identity).first() or default

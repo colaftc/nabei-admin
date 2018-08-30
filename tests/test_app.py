@@ -1,8 +1,12 @@
+# -*- coding:utf-8
+
 from app import create_app
 from extentions import exts
 from app import models
 import decimal
+import datetime
 from app.repositories import ExpenditureRepository, ExpenditureRepo, ExpenditureDocument
+from manage import init_app
 
 db = exts['db']
 mdb = exts['mdb']
@@ -15,6 +19,7 @@ class TestApp:
         self.app_context.push()
         self.client = self.app.test_client()
         db.init_app(self.app)
+        init_app(self.app)
         db.create_all(app=self.app)
 
     def teardown_class(self):
@@ -29,7 +34,6 @@ class TestApp:
 
     def test_404_handler(self):
         response = self.client.get('/cannot_found_page')
-        assert '<body>' 
         assert response.status_code == 404
 
     def test_database_connect(self):
@@ -51,10 +55,11 @@ class TestApp:
 
 
 class TestMongoRepo:
-    PRESSURE_TIMES = 100000
+    PRESSURE_TIMES = 10000
 
     def setup_class(self):
         self.app = create_app('testing')
+        init_app(self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.client = self.app.test_client()
@@ -63,7 +68,7 @@ class TestMongoRepo:
     def test_repo_method(self):
         name = 'testing'
         amount = decimal.Decimal('1969.17')
-        item = self.repo.add(name=name, amount=amount, category='B')
+        item = self.repo.add(name=name, amount=amount, category='B', pay_date=datetime.datetime.now())
         assert item.id is not None
         assert item.name == name
         assert item.amount == amount
@@ -79,8 +84,24 @@ class TestMongoRepo:
 
     def test_pressure(self):
         for i in range(self.PRESSURE_TIMES):
-            self.repo.add(name='pressure_testing{}'.format(i), amount=i*1.1, category='G')
+            self.repo.add(name='pressure_testing{}'.format(i), amount=i*1.1, category='G', pay_date=datetime.datetime.now())
 
         v = self.repo.get_or('pressure_testing1785')
         assert v is not None
         ExpenditureDocument.objects.delete()
+
+    def test_post(self):
+        resp = self.client.post('/api/expenditure', data={
+            'name': 'testing-post',
+            'amount': 1868.55,
+            'category': 'Q',
+        })
+        assert resp.status_code == 201
+        assert resp.is_json
+
+        item = self.repo.get_by('testing-post')
+        assert item.amount > 1868
+        assert models.CATEGORY_CHOICES_MAP[item.category] == '其它'
+
+        self.repo.remove({'name': 'testing-post'})
+        assert self.repo.get_or('testing-post') is None

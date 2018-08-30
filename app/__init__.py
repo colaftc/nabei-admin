@@ -4,6 +4,10 @@ from flask import Flask, request
 from config import config
 from extentions import exts
 
+HTTP_OK = 200
+HTTP_NOT_FOUND = 404
+
+
 
 def create_app(config_name):
     app = Flask(__name__)
@@ -23,12 +27,12 @@ def create_app(config_name):
             return response
 
         else:
-            app.logger.warn('an html client accept and 404')
+            app.logger.warn('an html client accept and 404 url : %s', request.url)
             return "<html><body><h1>Sorry , Object Not Found</h1></body></html>", 404
 
     @app.before_request
     def app_before_request():
-        pass
+        app.logger.info('starting process request')
 
     return app
 

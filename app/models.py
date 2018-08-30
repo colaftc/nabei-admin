@@ -49,6 +49,7 @@ class ExpenditureDocument(Document):
     amount = mdb.DecimalField(pricision=2, required=True)
     category = mdb.StringField(max_length=20, required=True, default='Q', choices=CATEGORY_CHOICES)
     pay_date = mdb.DateTimeField(required=True, default=datetime.datetime.now)
+    meta = {'strict': False}
 
     def category_label(self):
         return CATEGORY_CHOICES_MAP[self.category]

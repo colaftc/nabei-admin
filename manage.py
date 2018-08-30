@@ -5,6 +5,7 @@ from flask_migrate import Migrate, MigrateCommand
 from extentions import exts
 from app.admin_view import ExpenditureTypeModelView
 from app.models import ExpenditureType
+from app.api import api_bp
 
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'debug')
@@ -16,6 +17,10 @@ migrate = Migrate(app, db)
 
 def make_shell_context():
     return dict(app=app, db=db)
+
+
+def init_app(app):
+    app.register_blueprint(api_bp, url_prefix='/api')
 
 
 admin = exts['admin']
@@ -32,4 +37,5 @@ def create_blueprint():
 
 
 if __name__ == '__main__':
+    init_app(app)
     manager.run()
