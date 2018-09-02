@@ -7,6 +7,8 @@ import decimal
 import datetime
 from app.repositories import ExpenditureRepository, ExpenditureRepo, ExpenditureDocument
 from manage import init_app
+from app.api.user import ApiUser, ApiUserRepo
+from werkzeug.security import check_password_hash
 
 db = exts['db']
 mdb = exts['mdb']
@@ -55,7 +57,7 @@ class TestApp:
 
 
 class TestMongoRepo:
-    PRESSURE_TIMES = 10000
+    PRESSURE_TIMES = 100
 
     def setup_class(self):
         self.app = create_app('testing')
@@ -86,7 +88,7 @@ class TestMongoRepo:
         for i in range(self.PRESSURE_TIMES):
             self.repo.add(name='pressure_testing{}'.format(i), amount=i*1.1, category='G', pay_date=datetime.datetime.now())
 
-        v = self.repo.get_or('pressure_testing1785')
+        v = self.repo.get_or('pressure_testing87')
         assert v is not None
         ExpenditureDocument.objects.delete()
 
@@ -105,3 +107,14 @@ class TestMongoRepo:
 
         self.repo.remove({'name': 'testing-post'})
         assert self.repo.get_or('testing-post') is None
+
+    def test_user(self):
+        user = ApiUser.load(101)
+        assert user
+        assert user.username == 'colaftc'
+        assert user.authenticate('fcp0520')
+        assert user.is_login
+        token = user.generate_token()
+        assert token
+        assert user.verify_token(token)
+        assert user.is_admin
